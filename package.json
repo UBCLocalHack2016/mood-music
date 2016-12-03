@@ -4,6 +4,7 @@
   "description": "A twitter bot analyzing tweets for mood and recommending music",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "make test"
   },
   "repository": {

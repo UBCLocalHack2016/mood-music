@@ -1,0 +1,22 @@
+{
+  "name": "mood-music",
+  "version": "1.0.0",
+  "description": "A twitter bot analyzing tweets for mood and recommending music",
+  "main": "index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://chan-kelv@github.com/UBCLocalHack2016/mood-music.git"
+  },
+  "keywords": [
+    "twitter"
+  ],
+  "author": "Kelvin Chan, Yonni Luu, Sherry Yuan, Russell Blickhan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/UBCLocalHack2016/mood-music/issues"
+  },
+  "homepage": "https://github.com/UBCLocalHack2016/mood-music#readme"
+}

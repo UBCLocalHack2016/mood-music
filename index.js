@@ -8,22 +8,59 @@ var client = new Twitter({
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
-console.log(process.env.TWITTER_CONSUMER_KEY + " " + process.env.TWITTER_CONSUMER_SECRET + " " + process.env.TWITTER_ACCESS_TOKEN_KEY + " " + process.env.TIWTTER_ACCESS_TOKEN_SECRET);
-console.log(JSON.stringify(client));
-console.log('Consumer key: ' + client.options.consumer_key);
-console.log('Consumer secret: ' + client.options.consumer_secret);
-console.log('Access token key: ' + client.options.access_token_key);
-console.log('Access token secret: ' + client.options.access_token_secret);
-
-var params = {track: '#MoodMusicPls'};
+var hashtag = "#MoodMusicPls";
+var params = {track: hashtag};
 
 var stream = client.stream('statuses/filter', params);
-stream.on('data', function(event) {
-    console.log(event && event.text);
-    var text = event.text;
+stream.on('data', function(tweet) {
+    console.log(tweet && tweet.text);
+    analyzeTweet(tweet.text.replace(hashtag, ""));
 });
 stream.on('error', function(error) {
     console.log(error);
 });
+
+function analyzeTweet(text){
+
+    var postData = "txt=" + text;
+    var bodyChunks = [];
+
+    var req = http.request({
+        hostname: 'sentiment.vivekn.com',
+        port: 80,
+        path: '/api/text/',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    }, function (results){
+        // console.log("results: " + results);
+        results.on('data', function(chunk){
+            bodyChunks.push(chunk);
+            // console.log('on data: ' + chunk.toString());
+        });
+        results.on('end', function(){
+            var resultObj = JSON.parse(Buffer.concat(bodyChunks).toString());
+            console.log('resultObj: ' + JSON.stringify(resultObj));
+            var confidence = resultObj.result.confidence;
+            var sentiment = resultObj.result.sentiment;
+            tweetRecommendation(confidence, sentiment);
+            console.log('on end');
+        });
+
+        results.on('error', function(error){
+            console.log('on error: ' + JSON.stringify(error));
+        });
+    });
+
+    req.write(postData);
+    req.end();
+}
+
+function tweetRecommendation(confidence, sentiment){
+    console.log("confidence: " + confidence);
+    console.log("sentiment: " + sentiment);
+}
 
 

@@ -39,7 +39,7 @@ function analyzeTweet(text){
         results.on('data', function(chunk){
             bodyChunks.push(chunk);
             // console.log('on data: ' + chunk.toString());
-        });
+       });
         results.on('end', function(){
             var resultObj = JSON.parse(Buffer.concat(bodyChunks).toString());
             console.log('resultObj: ' + JSON.stringify(resultObj));
@@ -63,4 +63,9 @@ function tweetRecommendation(confidence, sentiment){
     console.log("sentiment: " + sentiment);
 }
 
-
+function sendResponse(username, desc, url) {
+    var statusText = "Hey @" + username + ", you sound " + desc + ". Here's a playlist for you: " + url;
+    client.post('statuses/update', {status: statusText}, function (error, tweet, response) {
+        if (error) console.log(error);
+    });
+}

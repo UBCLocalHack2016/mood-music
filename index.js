@@ -18,34 +18,61 @@ stream.on('data', function(tweet) {
 stream.on('error', function(error) {
     console.log(error);
 });
-
 var SpotifyWebApi = require('spotify-web-api-node');
 
-var spotifyApi = new SpotifyWebApi({
-  clientId : 'daed280322f74c999f06197ea71f530e',
-  clientSecret : 'd27953a5edce47a49ca46f43475885fa',
+
+// var authOptions={
+//     url:  'https://accounts.spotify.com/api/token',
+//     method:"POST",
+//     headers: {
+//         'Authorization': 'Basic' + (new Buffer(spotifyApi.client_id + ':' + spotifyApi.client_secret).toString('base64'))
+//     },
+//     body: "grant_type=client_credentials&scope=playlist-modify-public playlist-modify-private"
+// };
+
+// requests(authOptions,fuction(err, res, body)){
+//     console.log('error', err);
+//     console.log('status', res.statusCode);
+//     console.log('body', body);
+// });
+// }
+
+var request = require('request'); // "Request" library
+
+  var client_id = 'daed280322f74c999f06197ea71f530e';
+
+ var client_secret = 'd27953a5edce47a49ca46f43475885fa';
+// your application requests authorization
+var authOptions = {
+  url: 'https://accounts.spotify.com/api/token',
+  headers: {
+    'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64'))
+  },
+  form: {
+    grant_type: 'client_credentials'
+  },
+  json: true
+};
+
+request.post(authOptions, function(error, response, body) {
+  if (!error && response.statusCode === 200) {
+
+    // // use the access token to access the Spotify Web API
+    // var token = body.access_token;
+    // var options = {
+    //   url: 'https://api.spotify.com/v1/users/jmperezperez',
+    //   headers: {
+    //     'Authorization': 'Bearer ' + token
+    //   },
+    //   json: true
+    // };
+    // request.get(options, function(error, response, body) {
+    //   console.log(body);
+    // });
+    console.log(body.access_token);
+  }
 });
 
-function spotifyAuth () {
-  //TODO not working yet
-
-  var postData = "grant_type=client_credentials";
-    var req = http.request({
-        hostname:"https://accounts.spotify.com/api/token",
-        method: 'POST',
-        headers:{
-          'Authorization': "Basic " + spotifyApi.clientId +":"+ spotifyApi.clientSecret,
-          'Content-Length': Buffer.byteLength(postData)
-        }
-    }, function(res){
-        console.log("Spotify auth" + res);
-    });
-
-    req.write(postData);
-    req.end();
-}
-
-spotifyAuth();
 
 function analyzeTweet(text){
 
@@ -66,7 +93,7 @@ function analyzeTweet(text){
         results.on('data', function(chunk){
             bodyChunks.push(chunk);
             // console.log('on data: ' + chunk.toString());
-       });
+        });
         results.on('end', function(){
             var resultObj = JSON.parse(Buffer.concat(bodyChunks).toString());
             console.log('resultObj: ' + JSON.stringify(resultObj));
@@ -88,11 +115,4 @@ function analyzeTweet(text){
 function tweetRecommendation(confidence, sentiment){
     console.log("confidence: " + confidence);
     console.log("sentiment: " + sentiment);
-}
-
-function sendResponse(username, desc, url) {
-    var statusText = "Hey @" + username + ", you sound " + desc + ". Here's a playlist for you: " + url;
-    client.post('statuses/update', {status: statusText}, function (error, tweet, response) {
-        if (error) console.log(error);
-    });
 }

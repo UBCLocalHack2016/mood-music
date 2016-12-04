@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/UBCLocalHack2016/mood-music#readme",
   "dependencies": {
+    "request": "^2.79.0",
     "spotify-web-api-node": "^2.3.6",
     "twitter": "^1.5.0"
   }

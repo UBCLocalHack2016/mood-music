@@ -28,15 +28,21 @@ var spotifyApi = new SpotifyWebApi({
 
 function spotifyAuth () {
   //TODO not working yet
+
+  var postData = "grant_type=client_credentials";
     var req = http.request({
         hostname:"https://accounts.spotify.com/api/token",
-        port:80,
-        path:'/',
         method: 'POST',
-        agent: false
-    }, (res) =>{
+        headers:{
+          'Authorization': "Basic " + spotifyApi.clientId +":"+ spotifyApi.clientSecret,
+          'Content-Length': Buffer.byteLength(postData)
+        }
+    }, function(res){
         console.log("Spotify auth" + res);
     });
+
+    req.write(postData);
+    req.end();
 }
 
 spotifyAuth();

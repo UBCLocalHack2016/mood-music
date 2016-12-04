@@ -7,7 +7,6 @@ var client = new Twitter({
     access_token_key: process.env.TWITTER_ACCESS_TOKEN_KEY,
     access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
-
 var hashtag = "#MoodMusicPls";
 var params = {track: hashtag};
 
@@ -19,6 +18,28 @@ stream.on('data', function(tweet) {
 stream.on('error', function(error) {
     console.log(error);
 });
+
+var SpotifyWebApi = require('spotify-web-api-node');
+
+var spotifyApi = new SpotifyWebApi({
+  clientId : 'daed280322f74c999f06197ea71f530e',
+  clientSecret : 'd27953a5edce47a49ca46f43475885fa',
+});
+
+function spotifyAuth () {
+  //TODO not working yet
+    var req = http.request({
+        hostname:"https://accounts.spotify.com/api/token",
+        port:80,
+        path:'/',
+        method: 'POST',
+        agent: false
+    }, (res) =>{
+        console.log("Spotify auth" + res);
+    });
+}
+
+spotifyAuth();
 
 function analyzeTweet(text){
 

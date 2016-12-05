@@ -1,4 +1,5 @@
 var http    = require('http');
+var https = require('https');
 var Twitter = require('twitter');
 var SpotifyWebApi = require('spotify-web-api-node');
 var request = require('request'); // "Request" library
@@ -12,14 +13,13 @@ var client = new Twitter({
 var hashtag = "#MoodMusicPls";
 var params = {track: hashtag};
 
-var client_id = 'daed280322f74c999f06197ea71f530e';
-
-var client_secret = 'd27953a5edce47a49ca46f43475885fa';
+var client_id = process.env.SPOTIFY_CLIENT_ID;
+var client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 
 var stream = client.stream('statuses/filter', params);
 stream.on('data', function(tweet) {
     console.log(tweet && tweet.text);
-    analyzeTweet(tweet.user.screen_name, tweet.text.replace(hashtag, ""));
+    analyzeTweet(tweet.user.screen_name, tweet.text.replace(hashtag, ''));
 });
 stream.on('error', function(error) {
     console.log(error);
@@ -34,7 +34,7 @@ stream.on('error', function(error) {
 //     },
 //     body: "grant_type=client_credentials&scope=playlist-modify-public playlist-modify-private"
 // };
-
+//
 // requests(authOptions,fuction(err, res, body)){
 //     console.log('error', err);
 //     console.log('status', res.statusCode);
@@ -66,35 +66,33 @@ request.post(authOptions, function(error, response, body) {
 
 
 function analyzeTweet(username, text){
-
-    var postData = "txt=" + text;
+    var postData = 'txt=' + text;
     var bodyChunks = [];
 
-    var req = http.request({
+    var options = {
         hostname: 'sentiment.vivekn.com',
-        port: 80,
         path: '/api/text/',
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Content-Length': Buffer.byteLength(postData)
         }
-    }, function (results){
-        // console.log("results: " + results);
-        results.on('data', function(chunk){
+    };
+
+    var req = http.request(options, (res) => {
+        res.on('data', function(chunk){
             bodyChunks.push(chunk);
-            // console.log('on data: ' + chunk.toString());
         });
-        results.on('end', function(){
+        res.on('end', function(){
             var resultObj = JSON.parse(Buffer.concat(bodyChunks).toString());
             console.log('resultObj: ' + JSON.stringify(resultObj));
             var confidence = resultObj.result.confidence;
             var sentiment = resultObj.result.sentiment;
             getRecommendation(username, confidence, sentiment, accessToken);
+            //authSpotify(username, confidence, sentiment);
         });
-
-        results.on('error', function(error){
-            console.log('on error: ' + JSON.stringify(error));
+        res.on('error', function(error){
+            console.log('Error occurred in sentiment analysis request: ' + error);
         });
     });
 
@@ -102,65 +100,91 @@ function analyzeTweet(username, text){
     req.end();
 }
 
+// function authSpotify(username, confidence, sentiment) {
+//     var bodyChunks = [];
+//     var options = {
+//         hostname: 'accounts.spotify.com',
+//         path: '/api/token',
+//         method: 'POST',
+//         headers: {
+//             'Authorization': 'Basic ' + client_id + client_secret
+//         }
+//     };
+//     var req = https.request(options, (res) => {
+//         res.setEncoding('utf8');
+//         res.on('data', (chunk) => {
+//             bodyChunks.push(chunk);
+//         });
+//         res.on('end', () => {
+//             console.log('Data received: ' + bodyChunks);
+//             getRecommendation(username, confidence, sentiment, JSON.stringify(bodyChunks).access_token);
+//         });
+//         res.on('error', (err) => {
+//             console.log(err);
+//         });
+//     });
+//
+//     req.write('grant_type=client_credentials');
+//     req.end();
+// }
+
 function getRecommendation(username, confidence, sentiment, accessToken) {
-    console.log("In get rec");
     var bodyChunks = [];
-    var adjective;
+    var adjective = 'neutral';
     var pathString = '/v1/recommendations?';
-
-    console.log(sentiment);
-
     var valence = 0.5;
-    if (sentiment === "Positive") {
+    var mode;
+
+    pathString += 'seed_genres=dance'
+
+    if (sentiment === 'Positive') {
         valence = valence + (0.5 * (confidence / 100));
-        pathString += "valence=";
-        pathString += valence;
-        pathString += "&mode=1";
-        adjective = "positive";
-    } else if (sentiment === "Negative") {
+        mode = 1;
+        adjective = 'positive';
+    } else if (sentiment === 'Negative') {
         valence = valence - (0.5 * (confidence / 100));
-        pathString += "valence=";
-        pathString += valence;
-        pathString += "&mode=0";
-        adjective = "negative";
-    } else {
-        pathString += "valence=";
-        pathString += valence;
-        adjective = "neutral";
+        mode = 0;
+        adjective = 'negative';
+    }
+    pathString += '&valence=' + valence;
+    if (mode !== undefined) {
+        pathString += '&mode=' + mode;
     }
 
-    pathString += "&limit=20"
+    console.log('api.spotify.com' + pathString);
 
-    console.log("set vars");
-    console.log("api.spotify.com" + pathString);
-
-    var https = require('https');
-
-    var req = https.request({
+    var options = {
         hostname: 'api.spotify.com',
         path: pathString,
         headers: {
-            'Authorization': 'Bearer' + accessToken
-        }}, function (results) {
-            results.on("data", function (chunk) {
+            'Authorization': 'Bearer ' + accessToken
+        }
+    }
+
+    var req = https.request(options, (res) => {
+            res.on('data', function (chunk) {
                 console.log(chunk);
                 bodyChunks.push(chunk);
             });
-            results.on("end", function (chunk) {
+            res.on('end', function (chunk) {
                 var resultObj = JSON.parse(Buffer.concat(bodyChunks).toString());
+                console.log('resultObj: ' + JSON.stringify(resultObj));
+                console.log(resultObj);
                 var randomInt = Math.floor(Math.random() * resultObj.tracks.length);
                 var url = resultObj.tracks[randomInt].external_urls.spotify;
-                console.log("sending response");
+                console.log('Sending response');
                 sendResponse(username, adjective, url);
             });
-            results.on("error", function (error) {
-                console.log("on error: " + JSON.stringify(error));
+            res.on('error', function (error) {
+                console.log('Error on call to Spotify API: ' + error);
             });
         });
+
+    req.end();
 }
 
 function sendResponse(username, desc, url) {
-    var statusText = "Hey @" + username + ", you sound " + desc + ". Here's a playlist for you: " + url;
+    var statusText = 'Hey @' + username + ', you sound ' + desc + '. Here\'s a playlist for you: ' + url;
     client.post('statuses/update', {status: statusText}, function (error, tweet, response) {
         if (error) console.log(error);
     });
